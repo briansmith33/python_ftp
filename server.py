@@ -1,13 +1,17 @@
+from dotenv import dotenv_values
 from threading import Thread
 import socket
 import os
 
 
+config = dotenv_values('.env')
+
+
 class FTPServer:
     def __init__(self,
-                 host=socket.gethostbyname(socket.gethostname()),
+                 host=config['FTP_HOST'],
                  port=21,
-                 root='./test',
+                 root='./shared',
                  allows_anonymous=True,
                  buffer_size=1024):
         self.host = host
@@ -18,7 +22,7 @@ class FTPServer:
         self.cwd = root
         self.allows_anonymous = allows_anonymous
         self.buffer_size = buffer_size
-        self.users = {'brian': 'password'}
+        self.users = {'user': 'password'}
 
     def get_username(self, conn):
         while True:

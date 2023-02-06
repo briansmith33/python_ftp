@@ -1,11 +1,14 @@
+from dotenv import dotenv_values
 import socket
 import time
 import sys
 
+config = dotenv_values('.env')
+
 
 class FTPClient:
     def __init__(self,
-                 host=socket.gethostbyname(socket.gethostname()),
+                 host=config['FTP_HOST'],
                  port=21,
                  buffer_size=1024):
         self.host = host
