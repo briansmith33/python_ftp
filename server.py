@@ -86,7 +86,7 @@ class FTPServer:
                     cursor.execute(f"SELECT * FROM users WHERE username=?", user)
                     user = cursor.fetchone()
                     db.close()
-                    if user['password'] == password:
+                    if bcrypt.checkpw(user['password'].encode(), password.encode()):
                         conn.send(b'230 User logged in\r\n')
                         return True
             conn.send(b'430 Invalid password\r\n')
