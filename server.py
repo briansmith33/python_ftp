@@ -1,5 +1,6 @@
 from dotenv import dotenv_values
 from threading import Thread
+import sqlite3
 import socket
 import os
 
@@ -22,7 +23,6 @@ class FTPServer:
         self.cwd = root
         self.allows_anonymous = allows_anonymous
         self.buffer_size = buffer_size
-        self.users = {'user': 'password'}
 
     def get_username(self, conn):
         while True:
@@ -30,12 +30,19 @@ class FTPServer:
             if username.upper().startswith('USER'):
                 username = username[len('USER '):]
                 print(username)
+
                 if username == 'anonymous' and self.allows_anonymous:
                     conn.send(b'331 Guest login ok, leave password blank.\r\n')
                     break
-                elif username in self.users.keys():
-                    conn.send(b'331 User name ok, need password.\r\n')
-                    break
+                else:
+                    db = sqlite3.connect("ftp.db")
+                    cursor = db.cursor()
+                    cursor.execute(f"SELECT * FROM users WHERE username=?", username)
+                    user = cursor.fetchone()
+                    db.close()
+                    if user:
+                        conn.send(b'331 User name ok, need password.\r\n')
+                        break
             conn.send(b'430 Invalid username\r\n')
 
         return username
@@ -50,9 +57,15 @@ class FTPServer:
                 if user == 'anonymous':
                     conn.send(b'230 Anonymous login ok, access restrictions apply\r\n')
                     return True
-                elif self.users[user] == password:
-                    conn.send(b'230 User logged in\r\n')
-                    return True
+                else:
+                    db = sqlite3.connect("ftp.db")
+                    cursor = db.cursor()
+                    cursor.execute(f"SELECT * FROM users WHERE username=?", user)
+                    user = cursor.fetchone()
+                    db.close()
+                    if user['password'] == password:
+                        conn.send(b'230 User logged in\r\n')
+                        return True
             conn.send(b'430 Invalid password\r\n')
 
     def accept_connection(self, conn, addr):
