@@ -1,7 +1,9 @@
 from dotenv import dotenv_values
 from threading import Thread
 import sqlite3
+import bcrypt
 import socket
+import uuid
 import os
 
 
@@ -23,6 +25,27 @@ class FTPServer:
         self.cwd = root
         self.allows_anonymous = allows_anonymous
         self.buffer_size = buffer_size
+
+        db = sqlite3.connect("ftp.db")
+        cursor = db.cursor()
+        cursor.execute("DROP TABLE IF EXISTS users")
+        table = """ CREATE TABLE users (
+                    id VARCHAR(255) NOT NULL,
+                    username VARCHAR(255) NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                ); """
+        cursor.execute(table)
+        db.commit()
+        db.close()
+
+    def add_user(self, username, password):
+        salt = bcrypt.gensalt()
+        hash = bcrypt.hashpw(password.encode(), salt)
+        db = sqlite3.connect("ftp.db")
+        cursor = db.cursor()
+        cursor.execute(f"INSERT INTO users VALUES(?, ?, ?)", (str(uuid.uuid4()), username, hash))
+        db.commit()
+        db.close()
 
     def get_username(self, conn):
         while True:
